@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PDF Flipbook – React & Vue adaptörleri</title>
+    <style>
+      body { margin: 0; font-family: system-ui, sans-serif; }
+      .box { height: 45vh; border-bottom: 1px solid #ddd; }
+    </style>
+  </head>
+  <body>
+    <div id="react" class="box"></div>
+    <div id="vue" class="box"></div>
+    <script type="module">
+      // Adapter smoke test for the dev server (no JSX / SFC compiler needed).
+      import { StrictMode, createElement, useRef, useState } from 'react';
+      import { createRoot } from 'react-dom/client';
+      import { createApp, h, ref } from 'vue';
+      import { Flipbook as ReactFlipbook } from '../src/adapters/react.ts';
+      import { Flipbook as VueFlipbook } from '../src/adapters/vue.ts';
+      import workerSrc from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
+
+      const pdfjs = { workerSrc };
+
+      function ReactDemo() {
+        const book = useRef(null);
+        const [page, setPage] = useState(0);
+        window.reactBook = book;
+        window.reactPage = () => page;
+        return createElement(ReactFlipbook, {
+          ref: book,
+          src: './sample.pdf',
+          pdfjs,
+          onPageChange: (e) => setPage(e.page),
+          labels: { counter: (p, t) => `React ${p} / ${t}` },
+        });
+      }
+      createRoot(document.getElementById('react')).render(createElement(StrictMode, null, createElement(ReactDemo)));
+
+      createApp({
+        setup() {
+          const book = ref(null);
+          const page = ref(0);
+          window.vueBook = book;
+          window.vuePage = page;
+          return () =>
+            h(VueFlipbook, {
+              ref: book,
+              src: './sample.pdf',
+              mode: 'single',
+              options: { pdfjs },
+              onPagechange: (e) => (page.value = e.page),
+            });
+        },
+      }).mount('#vue');
+    </script>
+  </body>
+</html>

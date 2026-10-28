@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PDF Flipbook – geliştirme demosu</title>
+    <style>
+      html, body { margin: 0; height: 100%; font-family: system-ui, sans-serif; background: #1f2937; color: #e5e7eb; }
+      body { display: flex; flex-direction: column; }
+      header { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 10px 16px; background: #111827; }
+      header input[type="url"] { flex: 1; min-width: 200px; }
+      button, select, input { font: inherit; padding: 4px 8px; border-radius: 6px; border: 1px solid #374151; background: #1f2937; color: inherit; }
+      #reader { flex: 1; min-height: 0; --pfb-background: #1f2937; }
+      #log { font: 12px monospace; padding: 4px 16px; background: #111827; color: #9ca3af; white-space: nowrap; overflow: hidden; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <input id="url" type="url" value="./sample.pdf" aria-label="PDF URL" />
+      <button id="open">Aç</button>
+      <button id="prev">‹ Önceki</button>
+      <button id="next">Sonraki ›</button>
+      <input id="page" type="number" min="1" value="1" style="width: 70px" aria-label="Sayfa" />
+      <button id="go">Git</button>
+      <select id="mode" aria-label="Görünüm">
+        <option value="auto">Otomatik</option>
+        <option value="double">Çift sayfa</option>
+        <option value="single">Tek sayfa</option>
+      </select>
+      <label><input id="cover" type="checkbox" checked /> Kapak</label>
+    </header>
+    <div id="reader"></div>
+    <div id="log">…</div>
+
+    <script type="module">
+      import { PdfFlipbook } from '../src/index.ts';
+      // Self-hosted worker via Vite's ?url import (recommended over the CDN default).
+      import workerSrc from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
+
+      const $ = (id) => document.getElementById(id);
+      const log = (msg) => ($('log').textContent = msg);
+
+      const book = new PdfFlipbook('#reader', {
+        src: $('url').value,
+        pdfjs: { workerSrc },
+        labels: {
+          book: 'PDF kitap',
+          prev: 'Önceki sayfa',
+          next: 'Sonraki sayfa',
+          loading: 'Yükleniyor…',
+          error: 'Belge yüklenemedi.',
+          page: (n) => `Sayfa ${n}`,
+        },
+      });
+      window.book = book; // for debugging in the console
+
+      book.on('ready', ({ pageCount }) => log(`hazır: ${pageCount} sayfa`));
+      book.on('pagechange', ({ page, pages, pageCount }) => {
+        $('page').value = page;
+        log(`sayfa ${pages.join('-')} / ${pageCount} · mod: ${book.mode}`);
+      });
+      book.on('modechange', ({ mode }) => log(`mod: ${mode}`));
+      book.on('error', ({ error, page }) => log(`hata${page ? ` (sayfa ${page})` : ''}: ${error?.message ?? error}`));
+
+      $('open').onclick = () => book.load($('url').value);
+      $('prev').onclick = () => book.prev();
+      $('next').onclick = () => book.next();
+      $('go').onclick = () => book.goTo(Number($('page').value));
+      $('mode').onchange = (e) => book.setMode(e.target.value);
+      $('cover').onchange = (e) => book.setOptions({ showCover: e.target.checked });
+    </script>
+  </body>
+</html>

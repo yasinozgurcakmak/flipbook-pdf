@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PDF Flipbook – düz HTML</title>
+    <style>
+      body { margin: 0; font-family: system-ui, sans-serif; background: #f3f4f6; }
+      pdf-flipbook { height: 80vh; --pfb-background: #e5e7eb; }
+    </style>
+    <!-- Run `npm run build` first. In production: https://unpkg.com/flipbook-pdf -->
+    <script src="../dist/flipbook-pdf.iife.js"></script>
+  </head>
+  <body>
+    <h2 style="padding: 0 16px">1) Web Component</h2>
+    <pdf-flipbook id="wc" src="./sample.pdf" start-page="3"></pdf-flipbook>
+
+    <h2 style="padding: 0 16px">2) JavaScript API</h2>
+    <div id="reader" style="height: 70vh"></div>
+
+    <script>
+      document.getElementById('wc').addEventListener('pagechange', (e) => {
+        console.log('web component page', e.detail.page);
+      });
+
+      const book = PdfFlipbook.createFlipbook('#reader', { src: './sample.pdf', mode: 'single' });
+      book.on('pagechange', ({ page, pageCount }) => console.log('api page', page, '/', pageCount));
+    </script>
+  </body>
+</html>
